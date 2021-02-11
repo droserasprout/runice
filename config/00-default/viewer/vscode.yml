@@ -1,0 +1,4 @@
+rules:
+  vscode:
+    class: viewer
+    exe: /usr/lib/electron/electron
