@@ -2,10 +2,11 @@
 use std::fmt;
 
 use serde::de::{self, Visitor};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer};
+use serde_repr::{Serialize_repr};
 // use serde_repr::{Deserialize_repr, Serialize_repr};
 
-#[derive(Debug, Display, Serialize)]
+#[derive(Debug, Display, Serialize_repr)]
 #[repr(u8)]
 pub enum IOSchedClass {
     none = 0,
@@ -55,7 +56,7 @@ impl<'de> Deserialize<'de> for IOSchedClass {
     }
 }
 
-#[derive(Debug, Serialize, Display)]
+#[derive(Debug, Serialize_repr, Display)]
 #[repr(u8)]
 pub enum SchedPolicy {
     normal = 0,

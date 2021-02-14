@@ -5,7 +5,7 @@ extern crate strum;
 #[macro_use]
 extern crate strum_macros;
 use procfs::process::Process;
-use subprocess::Exec;
+use subprocess::{Exec, Redirection};
 mod config;
 mod enums;
 use regex::Regex;
@@ -24,8 +24,14 @@ struct Opts {
     verbose: i32,
 }
 
+fn call_renice(process: &Process, niceness: i64) {
+    let pid = process.pid();
+    let current_niceness = process.stat.nice as i64;
+    if current_niceness == niceness {
+        ()
+    }
 
-fn call_renice(pid: i32, niceness: i64) {
+    info!("renice {}: {} -> {}", pid, current_niceness, niceness);
     let command = Exec::cmd("renice")
         .arg(niceness.to_string())
         .arg("-p")
@@ -34,24 +40,40 @@ fn call_renice(pid: i32, niceness: i64) {
 }
 
 fn call_ionice(
-    pid: i32,
+    process: &Process,
     iosched_class: Option<&enums::IOSchedClass>,
     iosched_priority: Option<i8>,
 ) {
+    let pid = process.pid();
+
+    let out = Exec::cmd("ionice").arg("-p").arg(pid.to_string())
+        .stdout(Redirection::Pipe)
+        .capture().unwrap().stdout_str();
+    let out: Vec<&str> = out.trim().split(": prio ").collect::<Vec<&str>>();
+    // let current_iosched_class: String = String::from(out[0]);
+    // let current_iosched_class = serde::Deserializer::deserialize_any(&enums::IOSchedClass, current_iosched_class);
+    let current_iosched_priority = out[1].as_bytes().as_ptr() as i8;
+
     let mut command = Exec::cmd("ionice").arg("-p").arg(pid.to_string());
-    if iosched_class.is_some() {
-        let iosched_class_value = iosched_class.unwrap().to_string();
-        command = command.arg("-c").arg(iosched_class_value);
+
+    // FIXME: ionice: unknown scheduling class: 'best_effort'
+    if let Some(iosched_class) = iosched_class {
+        if true {
+            info!("ionice {}: {} -> {}", pid, "_", iosched_class);
+            command = command.arg("-c").arg(iosched_class.to_string());
+        }
     }
-    if iosched_priority.is_some() {
-        let ionice_value = iosched_priority.unwrap().to_string();
-        command = command.arg("-n").arg(ionice_value);
+    if let Some(iosched_priority) = iosched_priority {
+        if current_iosched_priority != iosched_priority {
+            info!("ionice {}: {} -> {}", pid, current_iosched_priority, iosched_priority);
+            command = command.arg("-n").arg(iosched_priority.to_string());
+        }
     }
     let _exit_status = command.join();
 }
 
 fn call_schedtool(
-    _pid: i32,
+    _process: &Process,
     _sched_policy: Option<&enums::SchedPolicy>,
     _sched_priority: Option<i8>,
 ) {
@@ -125,15 +147,15 @@ fn match_process<'a>(
     }
 }
 
-fn apply_class(pid: i32, class: &config::ProcessClassConfig) {
+fn apply_class(process: &Process, class: &config::ProcessClassConfig) {
     if let Some(class_niceness) = class.niceness {
-        call_renice(pid, class_niceness);
+        call_renice(process, class_niceness);
     }
     if class.iosched_class.is_some() | class.iosched_priority.is_some() {
-        call_ionice(pid, class.iosched_class.as_ref(), class.iosched_priority);
+        call_ionice(process, class.iosched_class.as_ref(), class.iosched_priority);
     }
     if class.sched_policy.is_some() | class.sched_priority.is_some() {
-        call_schedtool(pid, class.sched_policy.as_ref(), class.sched_priority);
+        call_schedtool(process, class.sched_policy.as_ref(), class.sched_priority);
     }
 }
 
@@ -158,10 +180,10 @@ fn main() {
     let classes = &config.get::<config::ClassesMapping>("classes").unwrap();
     let _cgroups = &config.get::<config::CgroupsMapping>("cgroups").unwrap();
 
-    for prc in procfs::process::all_processes().unwrap() {
-        let matched_class = match_process(&prc, rules, classes);
+    for process in procfs::process::all_processes().unwrap() {
+        let matched_class = match_process(&process, rules, classes);
         if matched_class.is_some() {
-            apply_class(prc.pid(), &matched_class.unwrap());
+            apply_class(&process, &matched_class.unwrap());
         }
     }
 }
