@@ -426,6 +426,7 @@ dependencies = [
  "enum-map",
  "log",
  "procfs",
+ "regex",
  "serde 1.0.123",
  "serde_repr",
  "simplelog",

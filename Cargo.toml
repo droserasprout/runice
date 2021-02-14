@@ -18,6 +18,7 @@ serde_repr = "^0.1"
 strum = "^0.13.0"
 strum_macros = "^0.13.0"
 enum-map = "^0.6.4"
+regex = "1"
 
 [dependencies.config]
 version = "0.10"

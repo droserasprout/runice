@@ -1,16 +1,32 @@
 use super::enums;
 use config::{Config, File};
-use serde::{Deserialize};
-#[allow(non_camel_case_types)]
+use serde::Deserialize;
 use std::collections::HashMap;
 use walkdir::WalkDir;
 extern crate simplelog;
+use std::fmt::Formatter;
 
 #[derive(Debug, Deserialize)]
 pub struct ProcessRuleConfig {
     pub class: String,
+    pub name: Option<String>,
     pub exe: Option<String>,
+    pub cmdline: Option<String>,
     pub user: Option<String>,
+}
+
+impl std::fmt::Display for ProcessRuleConfig {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        writeln!(
+            f,
+            "class={}, name={}, exe={}, cmdline={}, user={}",
+            self.class,
+            self.name.as_ref().unwrap_or(&String::from("")),
+            &self.exe.as_ref().unwrap_or(&String::from("")),
+            &self.cmdline.as_ref().unwrap_or(&String::from("")),
+            &self.user.as_ref().unwrap_or(&String::from("")),
+        )
+    }
 }
 
 #[derive(Debug, Deserialize)]

@@ -8,6 +8,7 @@ use procfs::process::Process;
 use subprocess::Exec;
 mod config;
 mod enums;
+use regex::Regex;
 extern crate procfs;
 extern crate serde;
 extern crate simplelog;
@@ -16,10 +17,9 @@ use simplelog::*;
 
 fn call_renice(pid: i32, niceness: i64) {
     let command = Exec::cmd("renice")
+        .arg(niceness.to_string())
         .arg("-p")
-        .arg(pid.to_string())
-        .arg("-n")
-        .arg(niceness.to_string());
+        .arg(pid.to_string());
     let _exit_status = command.join();
 }
 
@@ -55,39 +55,66 @@ fn match_process<'a>(
     let pid = process.pid;
     debug!("Trying to match PID {}", pid);
 
-    let _cmdline = match process.cmdline() {
+    let process_stat = process.stat().unwrap();
+
+    let process_name = process_stat.comm;
+
+    let process_exe = match process.exe() {
+        Ok(exe) => String::from(exe.to_str().unwrap()),
+        Err(_) => "".into(),
+    };
+
+    let process_cmdline = match process.cmdline() {
         Ok(cmdline) => cmdline.join(" "),
         Err(_) => "".into(),
     };
 
-    let exe = match process.exe() {
-        Ok(exe) => exe,
-        Err(_) => "".into(),
-    };
+    debug!(
+        "name={}, exe={}, cmdline={}",
+        process_name, process_exe, process_cmdline
+    );
 
-    let process_exe = String::from(exe.to_str().unwrap());
-    let _process_stat = process.stat().unwrap();
+    let mut matched_rule = None;
 
     for (name, rule) in rules {
-        debug!("{}", format!("Processing rule `{}`", name));
-        let rule_exe = rule
-            .exe
-            .clone()
-            .unwrap_or_else(|| -> String { "".to_string() });
-        let rule_class = rule.class.clone();
-        debug!("{}", format!("rule_exe={}, process_exe={}", rule_exe, process_exe));
-        if rule_exe == process_exe {
-            debug!("{}", format!("Matched by `exe`: {}", pid));
-            return Some(&classes[&rule_class]);
+        debug!("Trying rule `{}`", name);
+        debug!("{}", rule);
+
+        if let Some(rule_name) = &rule.name {
+            if process_name == *rule_name {
+                debug!("matched by name");
+                matched_rule = Some(rule);
+                break;
+            }
+        }
+
+        if let Some(rule_exe) = &rule.exe {
+            if process_exe == *rule_exe {
+                debug!("matched by exe");
+                matched_rule = Some(rule);
+                break;
+            }
+        }
+
+        if let Some(rule_cmdline) = &rule.cmdline {
+            let re = Regex::new(rule_cmdline).unwrap();
+            if re.is_match(process_cmdline.as_ref()) {
+                debug!("matched by cmdline");
+                matched_rule = Some(rule);
+                break;
+            }
         }
     }
-    None
+
+    match matched_rule {
+        Some(matched_rule) => Some(&classes[&matched_rule.class]),
+        None => None,
+    }
 }
 
 fn apply_class(pid: i32, class: &config::ProcessClassConfig) {
-    if class.niceness.is_some() {
-        let new_niceness = class.niceness.unwrap();
-        call_renice(pid, new_niceness);
+    if let Some(class_niceness) = class.niceness {
+        call_renice(pid, class_niceness);
     }
     if class.iosched_class.is_some() | class.iosched_priority.is_some() {
         call_ionice(pid, class.iosched_class.as_ref(), class.iosched_priority);

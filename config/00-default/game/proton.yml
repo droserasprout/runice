@@ -1,0 +1,4 @@
+rules:
+  proton:
+    class: game
+    cmdline: "/proton "

@@ -1,4 +1,7 @@
 rules:
+  vscode-oss:
+    class: viewer
+    name: code-oss
   vscode:
     class: viewer
-    exe: /usr/lib/electron/electron
+    name: code

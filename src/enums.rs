@@ -1,8 +1,8 @@
 #![allow(non_camel_case_types)]
 use std::fmt;
 
-use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
 // use serde_repr::{Deserialize_repr, Serialize_repr};
 
 #[derive(Debug, Display, Serialize)]
@@ -16,7 +16,7 @@ pub enum IOSchedClass {
 
 struct IOSchedClassVisitor;
 
-    impl<'de> Visitor<'de> for IOSchedClassVisitor {
+impl<'de> Visitor<'de> for IOSchedClassVisitor {
     type Value = IOSchedClass;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -24,29 +24,32 @@ struct IOSchedClassVisitor;
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: de::Error, {
+    where
+        E: de::Error,
+    {
         use IOSchedClass::*;
         let s = match dbg!(v.to_lowercase().as_str()) {
             "none" => none,
             "realtime" => realtime,
             "best_effort" => best_effort,
             "idle" => idle,
-            a => return Err(de::Error::custom(format!("{} not supported", a)))
+            a => return Err(de::Error::custom(format!("{} not supported", a))),
         };
         Ok(s)
     }
 
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E> where
-        E: de::Error, {
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
         self.visit_str(v.as_str())
     }
 }
 
 impl<'de> Deserialize<'de> for IOSchedClass {
     fn deserialize<D>(deserializer: D) -> Result<IOSchedClass, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_str(IOSchedClassVisitor)
     }
@@ -75,8 +78,9 @@ impl<'de> Visitor<'de> for SchedPolicyVisitor {
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: de::Error, {
+    where
+        E: de::Error,
+    {
         use SchedPolicy::*;
         let s = match v.to_lowercase().as_str() {
             "normal" => normal,
@@ -87,21 +91,23 @@ impl<'de> Visitor<'de> for SchedPolicyVisitor {
             "idle" => idle,
             "deadline" => deadline,
             "other" => other,
-            a => return Err(de::Error::custom(format!("{} not supported", a)))
+            a => return Err(de::Error::custom(format!("{} not supported", a))),
         };
         Ok(s)
     }
 
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E> where
-        E: de::Error, {
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
         self.visit_str(v.as_str())
     }
 }
 
 impl<'de> Deserialize<'de> for SchedPolicy {
     fn deserialize<D>(deserializer: D) -> Result<SchedPolicy, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_str(SchedPolicyVisitor)
     }
