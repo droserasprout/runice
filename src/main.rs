@@ -4,6 +4,9 @@ extern crate log;
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
+use crate::enums::IOSchedClassRepr;
+use crate::enums::iosched_class_to_repr;
+use crate::enums::iosched_class_from_repr;
 use procfs::process::Process;
 use subprocess::{Exec, Redirection};
 mod config;
@@ -15,6 +18,7 @@ extern crate simplelog;
 extern crate subprocess;
 use simplelog::*;
 use clap::*;
+
 
 #[derive(Clap)]
 #[clap()]
@@ -41,7 +45,7 @@ fn call_renice(process: &Process, niceness: i64) {
 
 fn call_ionice(
     process: &Process,
-    iosched_class: Option<&enums::IOSchedClass>,
+    iosched_class_repr: Option<&IOSchedClassRepr>,
     iosched_priority: Option<i8>,
 ) {
     let pid = process.pid();
@@ -50,16 +54,19 @@ fn call_ionice(
         .stdout(Redirection::Pipe)
         .capture().unwrap().stdout_str();
     let out: Vec<&str> = out.trim().split(": prio ").collect::<Vec<&str>>();
-    // let current_iosched_class: String = String::from(out[0]);
-    // let current_iosched_class = serde::Deserializer::deserialize_any(&enums::IOSchedClass, current_iosched_class);
+    let current_iosched_class_repr = out[0];
+    dbg!(current_iosched_class_repr);
+    let current_iosched_class = iosched_class_from_repr[current_iosched_class_repr];
     let current_iosched_priority = out[1].as_bytes().as_ptr() as i8;
 
     let mut command = Exec::cmd("ionice").arg("-p").arg(pid.to_string());
 
-    // FIXME: ionice: unknown scheduling class: 'best_effort'
-    if let Some(iosched_class) = iosched_class {
-        if true {
-            info!("ionice {}: {} -> {}", pid, "_", iosched_class);
+    if let Some(iosched_class_repr) = iosched_class_repr {
+        let iosched_class = iosched_class_from_repr[iosched_class_repr.as_str()];
+        dbg!(current_iosched_class, iosched_class);
+        if current_iosched_class != iosched_class {
+            let current_iosched_class_repr = iosched_class_to_repr[current_iosched_class];
+            info!("ionice {}: {} -> {}", pid, current_iosched_class_repr, iosched_class_repr);
             command = command.arg("-c").arg(iosched_class.to_string());
         }
     }
@@ -74,7 +81,7 @@ fn call_ionice(
 
 fn call_schedtool(
     _process: &Process,
-    _sched_policy: Option<&enums::SchedPolicy>,
+    _sched_policy: Option<&enums::SchedPolicyRepr>,
     _sched_priority: Option<i8>,
 ) {
 }

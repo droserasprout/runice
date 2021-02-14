@@ -1,3 +1,5 @@
+use crate::enums::SchedPolicyRepr;
+use crate::enums::IOSchedClassRepr;
 use super::enums;
 use config::{Config, File};
 use serde::Deserialize;
@@ -32,9 +34,9 @@ impl std::fmt::Display for ProcessRuleConfig {
 #[derive(Debug, Deserialize)]
 pub struct ProcessClassConfig {
     pub niceness: Option<i64>,
-    pub sched_policy: Option<enums::SchedPolicy>,
+    pub sched_policy: Option<SchedPolicyRepr>,
     pub sched_priority: Option<i8>,
-    pub iosched_class: Option<enums::IOSchedClass>,
+    pub iosched_class: Option<IOSchedClassRepr>,
     pub iosched_priority: Option<i8>,
     pub oom_score: Option<i8>,
     pub cgroup: Option<String>,

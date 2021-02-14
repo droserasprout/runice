@@ -7,11 +7,11 @@ classes:
 
   game:
     niceness: -5
-    iosched_class: best_effort
+    iosched_class: best-effort
 
   heavy_cpu:
     niceness: 19
-    iosched_class: best_effort
+    iosched_class: best-effort
     cgroup: cpu90
 
   media:
@@ -33,7 +33,7 @@ classes:
 
   voip:
     niceness: -1
-    iosched_class: best_effort
+    iosched_class: best-effort
     iosched_priority: 7
 
 cgroups: {}
