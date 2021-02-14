@@ -28,7 +28,7 @@ impl<'de> Visitor<'de> for IOSchedClassVisitor {
         E: de::Error,
     {
         use IOSchedClass::*;
-        let s = match dbg!(v.to_lowercase().as_str()) {
+        let s = match v.to_lowercase().as_str() {
             "none" => none,
             "realtime" => realtime,
             "best_effort" => best_effort,

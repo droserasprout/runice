@@ -14,6 +14,16 @@ extern crate serde;
 extern crate simplelog;
 extern crate subprocess;
 use simplelog::*;
+use clap::*;
+
+#[derive(Clap)]
+#[clap()]
+struct Opts {
+    /// A level of verbosity, and can be used multiple times
+    #[clap(short, long, parse(from_occurrences))]
+    verbose: i32,
+}
+
 
 fn call_renice(pid: i32, niceness: i64) {
     let command = Exec::cmd("renice")
@@ -55,7 +65,10 @@ fn match_process<'a>(
     let pid = process.pid;
     debug!("Trying to match PID {}", pid);
 
-    let process_stat = process.stat().unwrap();
+    let process_stat = match process.stat() {
+        Ok(process_stat) => process_stat,
+        Err(_) => return None,
+    };
 
     let process_name = process_stat.comm;
 
@@ -125,7 +138,17 @@ fn apply_class(pid: i32, class: &config::ProcessClassConfig) {
 }
 
 fn main() {
-    let _ = SimpleLogger::init(LevelFilter::Debug, Config::default());
+
+    let opts: Opts = Opts::parse();
+
+    let mut level_filter = LevelFilter::Info;
+    match opts.verbose {
+        1 => { level_filter = LevelFilter:: Debug; },
+        _ => (),
+    }
+
+    SimpleLogger::init(level_filter, Config::default()).unwrap();
+
 
     info!("Initializing runice");
 
