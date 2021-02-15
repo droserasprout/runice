@@ -4,13 +4,13 @@ extern crate log;
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
-use subprocess::NullFile;
 use crate::enums::iosched_class_from_repr;
 use crate::enums::iosched_class_to_repr;
 use crate::enums::sched_policy_from_repr;
 use crate::enums::sched_policy_to_repr;
 use crate::enums::IOSchedClassRepr;
 use procfs::process::Process;
+use subprocess::NullFile;
 use subprocess::{Exec, Redirection};
 mod config;
 mod enums;
@@ -21,6 +21,7 @@ extern crate simplelog;
 extern crate subprocess;
 use clap::*;
 use simplelog::*;
+use std::{thread, time};
 
 #[derive(Clap)]
 #[clap()]
@@ -50,7 +51,7 @@ fn call_renice(process: &Process, niceness: i8) {
     let pid = process.pid();
     let current_niceness = process.stat.nice as i8;
     if current_niceness == niceness {
-        return
+        return;
     }
 
     info!("renice {}: {} -> {}", pid, current_niceness, niceness);
@@ -58,8 +59,8 @@ fn call_renice(process: &Process, niceness: i8) {
         .arg(niceness.to_string())
         .arg("-p")
         .arg(pid.to_string());
-        command.stdout(NullFile).join().unwrap();
-    }
+    command.stdout(NullFile).join().unwrap();
+}
 
 fn call_ionice(
     process: &Process,
@@ -242,12 +243,22 @@ fn run() {
     let rules = &config.get::<config::RulesMapping>("rules").unwrap();
     let classes = &config.get::<config::ClassesMapping>("classes").unwrap();
     // let _cgroups = &config.get::<config::CgroupsMapping>("cgroups").unwrap();
+    let mut processed_pids: Vec<i32> = Vec::new();
 
-    for process in procfs::process::all_processes().unwrap() {
-        let matched_class = match_process(&process, rules, classes);
-        if matched_class.is_some() {
-            apply_class(&process, &matched_class.unwrap());
+    loop {
+        for process in procfs::process::all_processes().unwrap() {
+            let pid = process.pid;
+            if processed_pids.contains(&pid) {
+                continue;
+            }
+            processed_pids.push(pid);
+
+            let matched_class = match_process(&process, rules, classes);
+            if matched_class.is_some() {
+                apply_class(&process, &matched_class.unwrap());
+            }
         }
+        thread::sleep(time::Duration::from_millis(1000));
     }
 }
 
