@@ -215,6 +215,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dtoa"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88d7ed2934d741c6b37e33e3832298e8850b53fd2d2bea03873375596c7cea4e"
+
+[[package]]
 name = "enum-map"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -706,7 +712,9 @@ dependencies = [
  "procfs",
  "regex",
  "serde 1.0.123",
+ "serde_json",
  "serde_repr",
+ "serde_yaml",
  "simplelog",
  "strum",
  "strum_macros",
@@ -815,6 +823,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "110b3dbdf8607ec493c22d5d947753282f3bae73c0f56d322af1e8c78e4c23d5"
 dependencies = [
  "serde 0.8.23",
+]
+
+[[package]]
+name = "serde_yaml"
+version = "0.8.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15654ed4ab61726bf918a39cb8d98a2e2995b002387807fa6ba58fdf7f59bb23"
+dependencies = [
+ "dtoa",
+ "linked-hash-map 0.5.4",
+ "serde 1.0.123",
+ "yaml-rust",
 ]
 
 [[package]]

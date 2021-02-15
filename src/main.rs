@@ -4,9 +4,9 @@ extern crate log;
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
-use crate::enums::IOSchedClassRepr;
-use crate::enums::iosched_class_to_repr;
 use crate::enums::iosched_class_from_repr;
+use crate::enums::iosched_class_to_repr;
+use crate::enums::IOSchedClassRepr;
 use procfs::process::Process;
 use subprocess::{Exec, Redirection};
 mod config;
@@ -16,9 +16,8 @@ extern crate procfs;
 extern crate serde;
 extern crate simplelog;
 extern crate subprocess;
-use simplelog::*;
 use clap::*;
-
+use simplelog::*;
 
 #[derive(Clap)]
 #[clap()]
@@ -26,6 +25,24 @@ struct Opts {
     /// A level of verbosity, and can be used multiple times
     #[clap(short, long, parse(from_occurrences))]
     verbose: i32,
+    #[clap(subcommand)]
+    subcmd: SubCommand,
+}
+
+#[derive(Clap)]
+enum SubCommand {
+    #[clap()]
+    Run(Run),
+    #[clap()]
+    ImportAnanicy(ImportAnanicy),
+}
+
+#[derive(Clap)]
+struct Run {
+}
+
+#[derive(Clap)]
+struct ImportAnanicy {
 }
 
 fn call_renice(process: &Process, niceness: i64) {
@@ -50,9 +67,13 @@ fn call_ionice(
 ) {
     let pid = process.pid();
 
-    let out = Exec::cmd("ionice").arg("-p").arg(pid.to_string())
+    let out = Exec::cmd("ionice")
+        .arg("-p")
+        .arg(pid.to_string())
         .stdout(Redirection::Pipe)
-        .capture().unwrap().stdout_str();
+        .capture()
+        .unwrap()
+        .stdout_str();
     let out: Vec<&str> = out.trim().split(": prio ").collect::<Vec<&str>>();
     let current_iosched_class_repr = out[0];
     dbg!(current_iosched_class_repr);
@@ -66,13 +87,19 @@ fn call_ionice(
         dbg!(current_iosched_class, iosched_class);
         if current_iosched_class != iosched_class {
             let current_iosched_class_repr = iosched_class_to_repr[current_iosched_class];
-            info!("ionice {}: {} -> {}", pid, current_iosched_class_repr, iosched_class_repr);
+            info!(
+                "ionice {}: {} -> {}",
+                pid, current_iosched_class_repr, iosched_class_repr
+            );
             command = command.arg("-c").arg(iosched_class.to_string());
         }
     }
     if let Some(iosched_priority) = iosched_priority {
         if current_iosched_priority != iosched_priority {
-            info!("ionice {}: {} -> {}", pid, current_iosched_priority, iosched_priority);
+            info!(
+                "ionice {}: {} -> {}",
+                pid, current_iosched_priority, iosched_priority
+            );
             command = command.arg("-n").arg(iosched_priority.to_string());
         }
     }
@@ -90,7 +117,7 @@ fn match_process<'a>(
     process: &Process,
     rules: &config::RulesMapping,
     classes: &'a config::ClassesMapping,
-) -> Option<&'a config::ProcessClassConfig> {
+) -> Option<&'a config::RuniceClassConfig> {
     let pid = process.pid;
     debug!("Trying to match PID {}", pid);
 
@@ -154,31 +181,23 @@ fn match_process<'a>(
     }
 }
 
-fn apply_class(process: &Process, class: &config::ProcessClassConfig) {
+fn apply_class(process: &Process, class: &config::RuniceClassConfig) {
     if let Some(class_niceness) = class.niceness {
         call_renice(process, class_niceness);
     }
     if class.iosched_class.is_some() | class.iosched_priority.is_some() {
-        call_ionice(process, class.iosched_class.as_ref(), class.iosched_priority);
+        call_ionice(
+            process,
+            class.iosched_class.as_ref(),
+            class.iosched_priority,
+        );
     }
     if class.sched_policy.is_some() | class.sched_priority.is_some() {
         call_schedtool(process, class.sched_policy.as_ref(), class.sched_priority);
     }
 }
 
-fn main() {
-
-    let opts: Opts = Opts::parse();
-
-    let mut level_filter = LevelFilter::Info;
-    match opts.verbose {
-        1 => { level_filter = LevelFilter:: Debug; },
-        _ => (),
-    }
-
-    SimpleLogger::init(level_filter, Config::default()).unwrap();
-
-
+fn run() {
     info!("Initializing runice");
 
     let config = config::load_config();
@@ -193,4 +212,33 @@ fn main() {
             apply_class(&process, &matched_class.unwrap());
         }
     }
+}
+
+fn import_ananicy() {
+    config::import_ananicy_config()
+}
+
+fn main() {
+    let opts: Opts = Opts::parse();
+
+    let mut level_filter = LevelFilter::Info;
+    match opts.verbose {
+        1 => {
+            level_filter = LevelFilter::Debug;
+        }
+        _ => (),
+    }
+
+    SimpleLogger::init(level_filter, Config::default()).unwrap();
+
+    match opts.subcmd {
+        SubCommand::Run(_) => {
+            run();
+        }
+        SubCommand::ImportAnanicy(_) => {
+            import_ananicy();
+        }
+    }
+
+
 }

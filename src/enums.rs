@@ -1,13 +1,11 @@
 #![allow(non_camel_case_types)]
 
-use phf::{phf_map};
+use phf::phf_map;
 
 pub type IOSchedClass = String;
 pub type IOSchedClassRepr = String;
 pub type SchedPolicy = String;
 pub type SchedPolicyRepr = String;
-
-
 
 pub static iosched_class_from_repr: phf::Map<&'static str, &'static str> = phf_map! {
     "none" => "0",
@@ -44,4 +42,3 @@ pub static sched_policy_to_repr: phf::Map<&'static str, &'static str> = phf_map!
     "6" => "deadline",
     "99" => "other",
 };
-
