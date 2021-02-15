@@ -1,7 +1,0 @@
-rules:
-  vscode-oss:
-    class: viewer
-    name: code-oss
-  vscode:
-    class: viewer
-    name: code

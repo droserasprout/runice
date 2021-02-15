@@ -1,4 +1,4 @@
 rules:
   steamapps:
-    class: game
+    class: Game
     cmdline: "steamapps"
