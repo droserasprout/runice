@@ -38,12 +38,10 @@ enum SubCommand {
 }
 
 #[derive(Clap)]
-struct Run {
-}
+struct Run {}
 
 #[derive(Clap)]
-struct ImportAnanicy {
-}
+struct ImportAnanicy {}
 
 fn call_renice(process: &Process, niceness: i64) {
     let pid = process.pid();
@@ -239,6 +237,4 @@ fn main() {
             import_ananicy();
         }
     }
-
-
 }

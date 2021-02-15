@@ -3,11 +3,13 @@ use crate::enums::IOSchedClassRepr;
 use crate::enums::SchedPolicyRepr;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs::OpenOptions;
 use walkdir::WalkDir;
 extern crate simplelog;
 use std::fmt::Formatter;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::Read;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AnanicyRuleConfig {
@@ -156,13 +158,18 @@ pub fn import_ananicy_config() {
             "{}00-ananicy/{}.yml",
             runice_config_directory, ananicy_name
         ));
-        File::create(&runice_config_path).unwrap();
-        let runice_file = File::open(&runice_config_path).unwrap();
+        match File::create(&runice_config_path) {
+            _ => (),
+        }
+        let runice_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(&runice_config_path)
+            .unwrap();
 
         let ananicy_file = File::open(ananicy_config_path_obj).unwrap();
-        let ananicy_reader = BufReader::new(ananicy_file);
-
-        let ananicy_config = serde_json::from_reader(ananicy_reader);
+        let mut ananicy_reader = BufReader::new(ananicy_file);
 
         let mut runice_config: RuniceConfig = RuniceConfig {
             rules: None,
@@ -172,22 +179,38 @@ pub fn import_ananicy_config() {
 
         match anaicy_extension {
             "rules" => {
-                let ananicy_config: Vec<AnanicyRuleConfig> = ananicy_config.unwrap();
-
+                let mut ananicy_config_items = String::new();
+                ananicy_reader
+                    .read_to_string(&mut ananicy_config_items)
+                    .unwrap();
+                let ananicy_config_items: Vec<String> = ananicy_config_items
+                    .lines()
+                    .map(|line| line.split_whitespace().collect())
+                    .collect();
+                let ananicy_config_items: Vec<&String> = ananicy_config_items
+                    .iter()
+                    .filter(|line| !line.starts_with("#") & (line.len() != 0))
+                    .collect();
+                dbg!(&ananicy_config_items);
+                let ananicy_config_items: Vec<AnanicyRuleConfig> = ananicy_config_items
+                    .iter()
+                    .map(|item| serde_json::from_str(item).unwrap())
+                    .collect();
+                dbg!(&ananicy_config_items);
                 let mut rules_hashmap: HashMap<String, RuniceRuleConfig> = HashMap::new();
-                runice_config.rules = Some(rules_hashmap.clone());
 
-                for ananicy_config_item in ananicy_config {
+                for ananicy_config_item in ananicy_config_items {
                     let rule_config = RuniceRuleConfig {
                         class: ananicy_config_item.type_field,
-                        name: Some(ananicy_config_item.name),
+                        name: Some(ananicy_config_item.name.clone()),
                         exe: None,
                         cmdline: None,
                         user: None,
                     };
-                    rules_hashmap.insert(String::from(ananicy_name), rule_config);
+                    rules_hashmap.insert(ananicy_config_item.name.clone(), rule_config);
                 }
-                serde_json::to_writer(&runice_file, &runice_config).unwrap();
+                runice_config.rules = Some(rules_hashmap.clone());
+                serde_yaml::to_writer(&runice_file, &runice_config).unwrap();
             }
             "types" => {}
             "cgroups" => {}
