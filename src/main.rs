@@ -74,9 +74,14 @@ fn call_ionice(
         .stdout_str();
     let out: Vec<&str> = out.trim().split(": prio ").collect::<Vec<&str>>();
     let current_iosched_class_repr = out[0];
-    dbg!(current_iosched_class_repr);
     let current_iosched_class = iosched_class_from_repr[current_iosched_class_repr];
-    let current_iosched_priority = out[1].as_bytes().as_ptr() as i8;
+    let current_iosched_priority = 0;
+    match out.len() {
+        2 => {
+            let current_iosched_priority = Some(out[1].as_bytes().as_ptr() as i8);
+        }
+        _ => (),
+    };
 
     let mut command = Exec::cmd("ionice").arg("-p").arg(pid.to_string());
 

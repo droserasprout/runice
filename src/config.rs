@@ -205,10 +205,12 @@ pub fn import_ananicy_config() {
                 let ananicy_config_items: Vec<AnanicyRuleConfig> = ananicy_config_items
                     .iter()
                     .map(|item| serde_json::from_str(item))
-                    .filter_map(|item| item.unwrap_or({
-                        warn!("skipped invalid item");
-                        None
-                    }))
+                    .filter_map(|item| {
+                        item.unwrap_or({
+                            warn!("skipped invalid item");
+                            None
+                        })
+                    })
                     .collect();
                 dbg!(&ananicy_config_items);
                 let mut rules_hashmap: HashMap<String, RuniceRuleConfig> = HashMap::new();
@@ -228,13 +230,15 @@ pub fn import_ananicy_config() {
             }
             "types" => {
                 let ananicy_config_items: Vec<AnanicyTypeConfig> = ananicy_config_items
-                .iter()
-                .map(|item| serde_json::from_str(item))
-                .filter_map(|item| item.unwrap_or({
-                    warn!("skipped invalid item");
-                    None
-                }))
-                .collect();
+                    .iter()
+                    .map(|item| serde_json::from_str(item))
+                    .filter_map(|item| {
+                        item.unwrap_or({
+                            warn!("skipped invalid item");
+                            None
+                        })
+                    })
+                    .collect();
                 dbg!(&ananicy_config_items);
                 let mut classes_hashmap: HashMap<String, RuniceClassConfig> = HashMap::new();
 
