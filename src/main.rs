@@ -4,6 +4,7 @@ extern crate log;
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
+use subprocess::NullFile;
 use crate::enums::iosched_class_from_repr;
 use crate::enums::iosched_class_to_repr;
 use crate::enums::sched_policy_from_repr;
@@ -49,7 +50,7 @@ fn call_renice(process: &Process, niceness: i8) {
     let pid = process.pid();
     let current_niceness = process.stat.nice as i8;
     if current_niceness == niceness {
-        ()
+        return
     }
 
     info!("renice {}: {} -> {}", pid, current_niceness, niceness);
@@ -57,8 +58,8 @@ fn call_renice(process: &Process, niceness: i8) {
         .arg(niceness.to_string())
         .arg("-p")
         .arg(pid.to_string());
-    let _exit_status = command.join();
-}
+        command.stdout(NullFile).join().unwrap();
+    }
 
 fn call_ionice(
     process: &Process,
@@ -77,10 +78,10 @@ fn call_ionice(
     let out: Vec<&str> = out.trim().split(": prio ").collect::<Vec<&str>>();
     let current_iosched_class_repr = out[0];
     let current_iosched_class = iosched_class_from_repr[current_iosched_class_repr];
-    let current_iosched_priority = 0;
+    let mut current_iosched_priority = 0;
     match out.len() {
         2 => {
-            let current_iosched_priority = Some(out[1].as_bytes().as_ptr() as i8);
+            current_iosched_priority = out[1].as_bytes().as_ptr() as i8;
         }
         _ => (),
     };
@@ -89,7 +90,6 @@ fn call_ionice(
 
     if let Some(iosched_class_repr) = iosched_class_repr {
         let iosched_class = iosched_class_from_repr[iosched_class_repr.as_str()];
-        dbg!(current_iosched_class, iosched_class);
         if current_iosched_class != iosched_class {
             let current_iosched_class_repr = iosched_class_to_repr[current_iosched_class];
             info!(
@@ -108,7 +108,7 @@ fn call_ionice(
             command = command.arg("-n").arg(iosched_priority.to_string());
         }
     }
-    let _exit_status = command.join();
+    command.stdout(NullFile).join().unwrap();
 }
 
 fn call_schedtool(
@@ -125,8 +125,7 @@ fn call_schedtool(
 
     if let Some(sched_policy_repr) = sched_policy_repr {
         let sched_policy = sched_policy_from_repr[sched_policy_repr.as_str()];
-        dbg!(&current_sched_policy, &sched_policy);
-        if sched_policy_repr != sched_policy {
+        if current_sched_policy != sched_policy {
             let current_sched_policy_repr = sched_policy_to_repr[current_sched_policy.as_str()];
             info!(
                 "schedtool {}: {} -> {}",
@@ -138,8 +137,7 @@ fn call_schedtool(
 
     if let Some(sched_priority) = sched_priority {
         let sched_priority = &sched_priority.to_string();
-        dbg!(&current_sched_priority, &sched_priority);
-        if sched_priority != sched_priority {
+        if &current_sched_priority != sched_priority {
             info!(
                 "schedtool {}: {} -> {}",
                 pid, current_sched_priority, sched_priority
@@ -149,7 +147,7 @@ fn call_schedtool(
     }
 
     command = command.arg(pid.to_string());
-    let _exit_status = command.join();
+    command.stdout(NullFile).join().unwrap();
 }
 
 fn match_process<'a>(

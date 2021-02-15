@@ -118,7 +118,6 @@ pub fn load_config() -> config::Config {
         info!("Merging file {}", String::from(path));
         config.merge(config::File::with_name(path)).unwrap();
     }
-    dbg!(&config);
     let rules: RulesMapping = config.get("rules").unwrap();
     let total_rules: usize = rules.len();
 
@@ -198,7 +197,6 @@ pub fn import_ananicy_config() {
             .iter()
             .filter(|line| !line.starts_with("#") & (line.len() != 0))
             .collect();
-        dbg!(&ananicy_config_items);
 
         match anaicy_extension {
             "rules" => {
@@ -212,7 +210,6 @@ pub fn import_ananicy_config() {
                         })
                     })
                     .collect();
-                dbg!(&ananicy_config_items);
                 let mut rules_hashmap: HashMap<String, RuniceRuleConfig> = HashMap::new();
 
                 for ananicy_config_item in ananicy_config_items {
@@ -239,7 +236,6 @@ pub fn import_ananicy_config() {
                         })
                     })
                     .collect();
-                dbg!(&ananicy_config_items);
                 let mut classes_hashmap: HashMap<String, RuniceClassConfig> = HashMap::new();
 
                 for ananicy_config_item in ananicy_config_items {
