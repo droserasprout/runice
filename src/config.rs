@@ -110,7 +110,7 @@ pub fn load_config() -> config::Config {
         info!("Merging file {}", String::from(path));
         config.merge(config::File::with_name(path)).unwrap();
     }
-
+    dbg!(&config);
     let rules: RulesMapping = config.get("rules").unwrap();
     let total_rules: usize = rules.len();
 
@@ -194,7 +194,11 @@ pub fn import_ananicy_config() {
                 dbg!(&ananicy_config_items);
                 let ananicy_config_items: Vec<AnanicyRuleConfig> = ananicy_config_items
                     .iter()
-                    .map(|item| serde_json::from_str(item).unwrap())
+                    .map(|item| serde_json::from_str(item))
+                    .filter_map(|item| item.unwrap_or({
+                        warn!("skipped invalid item");
+                        None
+                    }))
                     .collect();
                 dbg!(&ananicy_config_items);
                 let mut rules_hashmap: HashMap<String, RuniceRuleConfig> = HashMap::new();
