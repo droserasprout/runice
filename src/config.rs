@@ -10,7 +10,10 @@ use std::fmt::Formatter;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
+#[macro_use]
+use serde_with::skip_serializing_none;
 
+#[skip_serializing_none]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AnanicyRuleConfig {
     pub name: String,
@@ -18,16 +21,17 @@ pub struct AnanicyRuleConfig {
     pub type_field: String,
 }
 
+#[skip_serializing_none]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AnanicyTypeConfig {
     #[serde(rename = "type")]
     pub type_field: String,
-    pub nice: Option<String>,
+    pub nice: Option<i8>,
     pub ioclass: Option<String>,
-    pub ionice: Option<String>,
+    pub ionice: Option<i8>,
     pub cgroup: Option<String>,
     pub sched: Option<String>,
-    pub oom_score_adj: Option<String>,
+    pub oom_score_adj: Option<i16>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -36,6 +40,7 @@ pub struct AnanicyCgroupConfig {
     pub CPUQuota: String,
 }
 
+#[skip_serializing_none]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RuniceRuleConfig {
     pub class: String,
@@ -59,14 +64,15 @@ impl std::fmt::Display for RuniceRuleConfig {
     }
 }
 
+#[skip_serializing_none]
 #[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct RuniceClassConfig {
-    pub niceness: Option<i64>,
+    pub niceness: Option<i8>,
     pub sched_policy: Option<SchedPolicyRepr>,
     pub sched_priority: Option<i8>,
     pub iosched_class: Option<IOSchedClassRepr>,
     pub iosched_priority: Option<i8>,
-    pub oom_score: Option<i8>,
+    pub oom_score_adj: Option<i16>,
     pub cgroup: Option<String>,
     pub affinity: Option<String>,
 }
@@ -75,12 +81,14 @@ trait Validate {
     fn validate(&self);
 }
 
+#[skip_serializing_none]
 #[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct RuniceCgroupConfig {
     pub cpu_quota: Option<i8>,
     pub memory_limit: Option<String>,
 }
 
+#[skip_serializing_none]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RuniceConfig {
     pub rules: Option<HashMap<String, RuniceRuleConfig>>,
@@ -117,8 +125,9 @@ pub fn load_config() -> config::Config {
     let classes: ClassesMapping = config.get("classes").unwrap();
     let total_classes: usize = classes.len();
 
-    let cgroups: CgroupsMapping = config.get("cgroups").unwrap();
-    let total_cgroups: usize = cgroups.len();
+    // let cgroups: CgroupsMapping = config.get("cgroups").unwrap();
+    // let total_cgroups: usize = cgroups.len();
+    let total_cgroups: usize = 0;
 
     info!(
         "Config has been loaded successfully: {} rules, {} classes, {} cgroups",
@@ -177,21 +186,22 @@ pub fn import_ananicy_config() {
             cgroups: None,
         };
 
+        let mut ananicy_config_items = String::new();
+        ananicy_reader
+            .read_to_string(&mut ananicy_config_items)
+            .unwrap();
+        let ananicy_config_items: Vec<String> = ananicy_config_items
+            .lines()
+            .map(|line| line.split_whitespace().collect())
+            .collect();
+        let ananicy_config_items: Vec<&String> = ananicy_config_items
+            .iter()
+            .filter(|line| !line.starts_with("#") & (line.len() != 0))
+            .collect();
+        dbg!(&ananicy_config_items);
+
         match anaicy_extension {
             "rules" => {
-                let mut ananicy_config_items = String::new();
-                ananicy_reader
-                    .read_to_string(&mut ananicy_config_items)
-                    .unwrap();
-                let ananicy_config_items: Vec<String> = ananicy_config_items
-                    .lines()
-                    .map(|line| line.split_whitespace().collect())
-                    .collect();
-                let ananicy_config_items: Vec<&String> = ananicy_config_items
-                    .iter()
-                    .filter(|line| !line.starts_with("#") & (line.len() != 0))
-                    .collect();
-                dbg!(&ananicy_config_items);
                 let ananicy_config_items: Vec<AnanicyRuleConfig> = ananicy_config_items
                     .iter()
                     .map(|item| serde_json::from_str(item))
@@ -216,7 +226,34 @@ pub fn import_ananicy_config() {
                 runice_config.rules = Some(rules_hashmap.clone());
                 serde_yaml::to_writer(&runice_file, &runice_config).unwrap();
             }
-            "types" => {}
+            "types" => {
+                let ananicy_config_items: Vec<AnanicyTypeConfig> = ananicy_config_items
+                .iter()
+                .map(|item| serde_json::from_str(item))
+                .filter_map(|item| item.unwrap_or({
+                    warn!("skipped invalid item");
+                    None
+                }))
+                .collect();
+                dbg!(&ananicy_config_items);
+                let mut classes_hashmap: HashMap<String, RuniceClassConfig> = HashMap::new();
+
+                for ananicy_config_item in ananicy_config_items {
+                    let class_config = RuniceClassConfig {
+                        niceness: ananicy_config_item.nice,
+                        sched_policy: ananicy_config_item.sched,
+                        sched_priority: None,
+                        iosched_class: ananicy_config_item.ioclass,
+                        iosched_priority: ananicy_config_item.ionice,
+                        oom_score_adj: ananicy_config_item.oom_score_adj,
+                        cgroup: ananicy_config_item.cgroup,
+                        affinity: None,
+                    };
+                    classes_hashmap.insert(ananicy_config_item.type_field.clone(), class_config);
+                }
+                runice_config.classes = Some(classes_hashmap.clone());
+                serde_yaml::to_writer(&runice_file, &runice_config).unwrap();
+            }
             "cgroups" => {}
             _ => {
                 continue;

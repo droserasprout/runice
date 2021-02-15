@@ -43,9 +43,9 @@ struct Run {}
 #[derive(Clap)]
 struct ImportAnanicy {}
 
-fn call_renice(process: &Process, niceness: i64) {
+fn call_renice(process: &Process, niceness: i8) {
     let pid = process.pid();
-    let current_niceness = process.stat.nice as i64;
+    let current_niceness = process.stat.nice as i8;
     if current_niceness == niceness {
         ()
     }
@@ -202,7 +202,7 @@ fn run() {
 
     let rules = &config.get::<config::RulesMapping>("rules").unwrap();
     let classes = &config.get::<config::ClassesMapping>("classes").unwrap();
-    let _cgroups = &config.get::<config::CgroupsMapping>("cgroups").unwrap();
+    // let _cgroups = &config.get::<config::CgroupsMapping>("cgroups").unwrap();
 
     for process in procfs::process::all_processes().unwrap() {
         let matched_class = match_process(&process, rules, classes);
