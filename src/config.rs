@@ -69,7 +69,7 @@ impl std::fmt::Display for RuniceRuleConfig {
 pub struct RuniceClassConfig {
     pub niceness: Option<i8>,
     pub sched_policy: Option<SchedPolicyRepr>,
-    pub sched_priority: Option<i8>,
+    pub sched_priority: Option<u32>,
     pub iosched_class: Option<IOSchedClassRepr>,
     pub iosched_priority: Option<i8>,
     pub oom_score_adj: Option<i16>,

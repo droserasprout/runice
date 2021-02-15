@@ -29,7 +29,6 @@ pub static sched_policy_from_repr: phf::Map<&'static str, &'static str> = phf_ma
     "iso" => "4",
     "idle" => "5",
     "deadline" => "6",
-    "other" => "99",
 };
 
 pub static sched_policy_to_repr: phf::Map<&'static str, &'static str> = phf_map! {
@@ -40,5 +39,4 @@ pub static sched_policy_to_repr: phf::Map<&'static str, &'static str> = phf_map!
     "4" => "iso",
     "5" => "idle",
     "6" => "deadline",
-    "99" => "other",
 };

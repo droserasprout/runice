@@ -6,6 +6,8 @@ extern crate strum;
 extern crate strum_macros;
 use crate::enums::iosched_class_from_repr;
 use crate::enums::iosched_class_to_repr;
+use crate::enums::sched_policy_from_repr;
+use crate::enums::sched_policy_to_repr;
 use crate::enums::IOSchedClassRepr;
 use procfs::process::Process;
 use subprocess::{Exec, Redirection};
@@ -110,10 +112,44 @@ fn call_ionice(
 }
 
 fn call_schedtool(
-    _process: &Process,
-    _sched_policy: Option<&enums::SchedPolicyRepr>,
-    _sched_priority: Option<i8>,
+    process: &Process,
+    sched_policy_repr: Option<&enums::SchedPolicyRepr>,
+    sched_priority: Option<u32>,
 ) {
+    let pid = process.pid();
+
+    let current_sched_policy = process.stat().unwrap().policy.unwrap().to_string();
+    let current_sched_priority = process.stat().unwrap().rt_priority.unwrap().to_string();
+
+    let mut command = Exec::cmd("schedtool");
+
+    if let Some(sched_policy_repr) = sched_policy_repr {
+        let sched_policy = sched_policy_from_repr[sched_policy_repr.as_str()];
+        dbg!(&current_sched_policy, &sched_policy);
+        if sched_policy_repr != sched_policy {
+            let current_sched_policy_repr = sched_policy_to_repr[current_sched_policy.as_str()];
+            info!(
+                "schedtool {}: {} -> {}",
+                pid, current_sched_policy_repr, sched_policy_repr
+            );
+            command = command.arg("-M").arg(sched_policy);
+        }
+    }
+
+    if let Some(sched_priority) = sched_priority {
+        let sched_priority = &sched_priority.to_string();
+        dbg!(&current_sched_priority, &sched_priority);
+        if sched_priority != sched_priority {
+            info!(
+                "schedtool {}: {} -> {}",
+                pid, current_sched_priority, sched_priority
+            );
+            command = command.arg("-p").arg(&sched_priority);
+        }
+    }
+
+    command = command.arg(pid.to_string());
+    let _exit_status = command.join();
 }
 
 fn match_process<'a>(
