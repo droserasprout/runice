@@ -195,19 +195,26 @@ pub fn import_ananicy_config() {
             .collect();
         let ananicy_config_items: Vec<&String> = ananicy_config_items
             .iter()
-            .filter(|line| !line.starts_with("#") & (line.len() != 0))
+            .filter(|line| !line.starts_with("#") & !line.is_empty() & (*line != "\n"))
             .collect();
 
+        // FIXME: replace copypaste with type aliases
         match anaicy_extension {
             "rules" => {
                 let ananicy_config_items: Vec<AnanicyRuleConfig> = ananicy_config_items
                     .iter()
-                    .map(|item| serde_json::from_str(item))
                     .filter_map(|item| {
-                        item.unwrap_or({
-                            warn!("skipped invalid item");
-                            None
-                        })
+                        match serde_json::from_str(&item.as_str()) {
+                            Ok(json_item) => json_item,
+                            Err(_) => {
+                                warn!(
+                                    "{}: skipped invalid item",
+                                    &ananicy_filename.to_str().unwrap()
+                                );
+                                dbg!(&item);
+                                None
+                            }
+                        }
                     })
                     .collect();
                 let mut rules_hashmap: HashMap<String, RuniceRuleConfig> = HashMap::new();
@@ -228,12 +235,18 @@ pub fn import_ananicy_config() {
             "types" => {
                 let ananicy_config_items: Vec<AnanicyTypeConfig> = ananicy_config_items
                     .iter()
-                    .map(|item| serde_json::from_str(item))
                     .filter_map(|item| {
-                        item.unwrap_or({
-                            warn!("skipped invalid item");
-                            None
-                        })
+                        match serde_json::from_str(&item.as_str()) {
+                            Ok(json_item) => json_item,
+                            Err(_) => {
+                                warn!(
+                                    "{}: skipped invalid item",
+                                    &ananicy_filename.to_str().unwrap()
+                                );
+                                dbg!(&item);
+                                None
+                            }
+                        }
                     })
                     .collect();
                 let mut classes_hashmap: HashMap<String, RuniceClassConfig> = HashMap::new();

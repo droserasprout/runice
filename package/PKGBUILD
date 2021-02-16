@@ -1,6 +1,6 @@
 pkgname=runice-git
 _pkgname=runice
-pkgver=r14.4f4a5dd
+pkgver=r16.2cedde0
 pkgrel=1
 pkgdesc="A daemon to manage process niceness, written in Rust"
 url="https://github.com/droserasprout/runice"
