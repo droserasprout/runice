@@ -1,4 +1,3 @@
-use super::enums;
 use crate::enums::IOSchedClassRepr;
 use crate::enums::SchedPolicyRepr;
 use serde::{Deserialize, Serialize};
@@ -6,12 +5,10 @@ use std::collections::HashMap;
 use std::fs::OpenOptions;
 use walkdir::WalkDir;
 extern crate simplelog;
-use std::fmt::Formatter;
+use serde_with::skip_serializing_none;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
-#[macro_use]
-use serde_with::skip_serializing_none;
 
 #[skip_serializing_none]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -37,7 +34,8 @@ pub struct AnanicyTypeConfig {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AnanicyCgroupConfig {
     pub cgroup: String,
-    pub CPUQuota: String,
+    #[serde(rename = "CPUQuota")]
+    pub cpu_quota: String,
 }
 
 #[skip_serializing_none]
@@ -48,20 +46,6 @@ pub struct RuniceRuleConfig {
     pub exe: Option<String>,
     pub cmdline: Option<String>,
     pub user: Option<String>,
-}
-
-impl std::fmt::Display for RuniceRuleConfig {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        writeln!(
-            f,
-            "class={}, name={}, exe={}, cmdline={}, user={}",
-            self.class,
-            self.name.as_ref().unwrap_or(&String::from("")),
-            &self.exe.as_ref().unwrap_or(&String::from("")),
-            &self.cmdline.as_ref().unwrap_or(&String::from("")),
-            &self.user.as_ref().unwrap_or(&String::from("")),
-        )
-    }
 }
 
 #[skip_serializing_none]
@@ -98,7 +82,7 @@ pub struct RuniceConfig {
 
 pub type RulesMapping = HashMap<String, RuniceRuleConfig>;
 pub type ClassesMapping = HashMap<String, RuniceClassConfig>;
-pub type CgroupsMapping = HashMap<String, RuniceCgroupConfig>;
+// pub type CgroupsMapping = HashMap<String, RuniceCgroupConfig>;
 
 pub fn load_config() -> config::Config {
     let config_path = "/etc/runice/";
@@ -156,19 +140,15 @@ pub fn import_ananicy_config() {
         let out: Vec<&str> = ananicy_filename
             .to_str()
             .unwrap()
-            .split(".")
+            .split('.')
             .collect::<Vec<&str>>();
         let ananicy_name = out[0];
         let anaicy_extension = out[1];
 
         // FIXME: ensure path exists
-        let runice_config_path = String::from(format!(
-            "{}00-ananicy/{}.yml",
-            runice_config_directory, ananicy_name
-        ));
-        match File::create(&runice_config_path) {
-            _ => (),
-        }
+        let runice_config_path =
+            format!("{}00-ananicy/{}.yml", runice_config_directory, ananicy_name);
+        File::create(&runice_config_path).unwrap();
         let runice_file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -195,7 +175,7 @@ pub fn import_ananicy_config() {
             .collect();
         let ananicy_config_items: Vec<&String> = ananicy_config_items
             .iter()
-            .filter(|line| !line.starts_with("#") & !line.is_empty() & (*line != "\n"))
+            .filter(|line| !line.starts_with('#') & !line.is_empty() & (*line != "\n"))
             .collect();
 
         // FIXME: replace copypaste with type aliases
@@ -203,17 +183,15 @@ pub fn import_ananicy_config() {
             "rules" => {
                 let ananicy_config_items: Vec<AnanicyRuleConfig> = ananicy_config_items
                     .iter()
-                    .filter_map(|item| {
-                        match serde_json::from_str(&item.as_str()) {
-                            Ok(json_item) => json_item,
-                            Err(_) => {
-                                warn!(
-                                    "{}: skipped invalid item",
-                                    &ananicy_filename.to_str().unwrap()
-                                );
-                                dbg!(&item);
-                                None
-                            }
+                    .filter_map(|item| match serde_json::from_str(&item.as_str()) {
+                        Ok(json_item) => json_item,
+                        Err(_) => {
+                            warn!(
+                                "{}: skipped invalid item",
+                                &ananicy_filename.to_str().unwrap()
+                            );
+                            dbg!(&item);
+                            None
                         }
                     })
                     .collect();
@@ -235,17 +213,15 @@ pub fn import_ananicy_config() {
             "types" => {
                 let ananicy_config_items: Vec<AnanicyTypeConfig> = ananicy_config_items
                     .iter()
-                    .filter_map(|item| {
-                        match serde_json::from_str(&item.as_str()) {
-                            Ok(json_item) => json_item,
-                            Err(_) => {
-                                warn!(
-                                    "{}: skipped invalid item",
-                                    &ananicy_filename.to_str().unwrap()
-                                );
-                                dbg!(&item);
-                                None
-                            }
+                    .filter_map(|item| match serde_json::from_str(&item.as_str()) {
+                        Ok(json_item) => json_item,
+                        Err(_) => {
+                            warn!(
+                                "{}: skipped invalid item",
+                                &ananicy_filename.to_str().unwrap()
+                            );
+                            dbg!(&item);
+                            None
                         }
                     })
                     .collect();

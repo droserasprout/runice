@@ -2,13 +2,12 @@
 #[macro_use]
 extern crate log;
 extern crate strum;
-#[macro_use]
 extern crate strum_macros;
-use crate::enums::iosched_class_from_repr;
-use crate::enums::iosched_class_to_repr;
-use crate::enums::sched_policy_from_repr;
-use crate::enums::sched_policy_to_repr;
 use crate::enums::IOSchedClassRepr;
+use crate::enums::IOSCHED_CLASS_FROM_REPR;
+use crate::enums::IOSCHED_CLASS_TO_REPR;
+use crate::enums::SCHED_POLICY_FROM_REPR;
+use crate::enums::SCHED_POLICY_TO_REPR;
 use procfs::process::Process;
 use subprocess::NullFile;
 use subprocess::{Exec, Redirection};
@@ -78,21 +77,18 @@ fn call_ionice(
         .stdout_str();
     let out: Vec<&str> = out.trim().split(": prio ").collect::<Vec<&str>>();
     let current_iosched_class_repr = out[0];
-    let current_iosched_class = iosched_class_from_repr[current_iosched_class_repr];
+    let current_iosched_class = IOSCHED_CLASS_FROM_REPR[current_iosched_class_repr];
     let mut current_iosched_priority = 0;
-    match out.len() {
-        2 => {
-            current_iosched_priority = out[1].as_bytes().as_ptr() as i8;
-        }
-        _ => (),
+    if let 2 = out.len() {
+        current_iosched_priority = out[1].as_bytes().as_ptr() as i8;
     };
 
     let mut command = Exec::cmd("ionice").arg("-p").arg(pid.to_string());
 
     if let Some(iosched_class_repr) = iosched_class_repr {
-        let iosched_class = iosched_class_from_repr[iosched_class_repr.as_str()];
+        let iosched_class = IOSCHED_CLASS_FROM_REPR[iosched_class_repr.as_str()];
         if current_iosched_class != iosched_class {
-            let current_iosched_class_repr = iosched_class_to_repr[current_iosched_class];
+            let current_iosched_class_repr = IOSCHED_CLASS_TO_REPR[current_iosched_class];
             info!(
                 "ionice {}: {} -> {}",
                 pid, current_iosched_class_repr, iosched_class_repr
@@ -125,9 +121,9 @@ fn call_schedtool(
     let mut command = Exec::cmd("schedtool");
 
     if let Some(sched_policy_repr) = sched_policy_repr {
-        let sched_policy = sched_policy_from_repr[sched_policy_repr.as_str()];
+        let sched_policy = SCHED_POLICY_FROM_REPR[sched_policy_repr.as_str()];
         if current_sched_policy != sched_policy {
-            let current_sched_policy_repr = sched_policy_to_repr[current_sched_policy.as_str()];
+            let current_sched_policy_repr = SCHED_POLICY_TO_REPR[current_sched_policy.as_str()];
             info!(
                 "schedtool {}: {} -> {}",
                 pid, current_sched_policy_repr, sched_policy_repr
@@ -185,7 +181,7 @@ fn match_process<'a>(
 
     for (name, rule) in rules {
         debug!("Trying rule `{}`", name);
-        debug!("{}", rule);
+        debug!("{:?}", rule);
 
         if let Some(rule_name) = &rule.name {
             if process_name == *rule_name {
@@ -254,8 +250,8 @@ fn run() {
             processed_pids.push(pid);
 
             let matched_class = match_process(&process, rules, classes);
-            if matched_class.is_some() {
-                apply_class(&process, &matched_class.unwrap());
+            if let Some(matched_class) = matched_class {
+                apply_class(&process, &matched_class);
             }
         }
         thread::sleep(time::Duration::from_millis(1000));
@@ -270,11 +266,8 @@ fn main() {
     let opts: Opts = Opts::parse();
 
     let mut level_filter = LevelFilter::Info;
-    match opts.verbose {
-        1 => {
-            level_filter = LevelFilter::Debug;
-        }
-        _ => (),
+    if opts.verbose == 1 {
+        level_filter = LevelFilter::Debug;
     }
 
     SimpleLogger::init(level_filter, Config::default()).unwrap();

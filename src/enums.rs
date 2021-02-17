@@ -2,26 +2,26 @@
 
 use phf::phf_map;
 
-pub type IOSchedClass = String;
+// pub type IOSchedClass = String;
 pub type IOSchedClassRepr = String;
-pub type SchedPolicy = String;
+// pub type SchedPolicy = String;
 pub type SchedPolicyRepr = String;
 
-pub static iosched_class_from_repr: phf::Map<&'static str, &'static str> = phf_map! {
+pub static IOSCHED_CLASS_FROM_REPR: phf::Map<&'static str, &'static str> = phf_map! {
     "none" => "0",
     "realtime" => "1",
     "best-effort" => "2",
     "idle" => "3",
 };
 
-pub static iosched_class_to_repr: phf::Map<&'static str, &'static str> = phf_map! {
+pub static IOSCHED_CLASS_TO_REPR: phf::Map<&'static str, &'static str> = phf_map! {
     "0" => "none",
     "1" => "realtime",
     "2" => "best-effort",
     "3" => "idle",
 };
 
-pub static sched_policy_from_repr: phf::Map<&'static str, &'static str> = phf_map! {
+pub static SCHED_POLICY_FROM_REPR: phf::Map<&'static str, &'static str> = phf_map! {
     "normal" => "0",
     "fifo" => "1",
     "rr" => "2",
@@ -31,7 +31,7 @@ pub static sched_policy_from_repr: phf::Map<&'static str, &'static str> = phf_ma
     "deadline" => "6",
 };
 
-pub static sched_policy_to_repr: phf::Map<&'static str, &'static str> = phf_map! {
+pub static SCHED_POLICY_TO_REPR: phf::Map<&'static str, &'static str> = phf_map! {
     "0" => "normal",
     "1" => "fifo",
     "2" => "rr",
