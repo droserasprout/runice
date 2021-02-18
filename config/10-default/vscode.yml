@@ -1,0 +1,4 @@
+rules:
+  vscode:
+    class: Doc-View
+    cmdline: /usr/lib/code
