@@ -1,6 +1,6 @@
 pkgname=runice-git
 _pkgname=runice
-pkgver=r16.2cedde0
+pkgver=r18.c86c663
 pkgrel=1
 pkgdesc="A daemon to manage process niceness, written in Rust"
 url="https://github.com/droserasprout/runice"
@@ -40,4 +40,5 @@ package() {
   install -d "$pkgdir/etc/runice/10-default" config/10-default/
   install config/10-default/* "$pkgdir/etc/runice/10-default"
   install -d "$pkgdir/etc/runice/20-local" config/20-local/
+  install -Dt "$pkgdir/usr/lib/systemd/system" runice.service
 }

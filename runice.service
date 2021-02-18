@@ -1,0 +1,19 @@
+[Unit]
+Description=A daemon to manage process niceness, written in Rust
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/runice run
+Nice=19
+OOMScoreAdjust=-999
+Restart=always
+CPUAccounting=true
+MemoryHigh=16M
+MemoryMax=64M
+ProtectSystem=true
+ProtectHome=true
+PrivateTmp=yes
+
+[Install]
+WantedBy=local-fs.target
