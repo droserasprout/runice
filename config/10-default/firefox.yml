@@ -1,0 +1,4 @@
+rules:
+  firefox:
+    class: viewer
+    cmdline: "/usr/lib/firefox"

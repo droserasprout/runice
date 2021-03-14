@@ -1,4 +1,4 @@
 rules:
-  steamapps:
+  lollypop:
     class: player
     cmdline: "python3 /usr/bin/lollypop"

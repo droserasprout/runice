@@ -1,0 +1,4 @@
+rules:
+  telegram-desktop:
+    class: voip
+    name: telegram-desktop

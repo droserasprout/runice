@@ -3,8 +3,7 @@ classes:
     niceness: 19
     sched_policy: idle
     iosched_class: idle
-
-        config.merge(config::File::with_name(path))  realtime:
+  realtime:
     niceness: -10
     iosched_class: realtime
   viewer:

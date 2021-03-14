@@ -1,0 +1,4 @@
+rules:
+  gnome-system-monitor:
+    class: realtime
+    name: gnome-system-monitor
