@@ -37,11 +37,16 @@ enum SubCommand {
     #[clap()]
     Run(Run),
     #[clap()]
+    Apply(Apply),
+    #[clap()]
     ImportAnanicy(ImportAnanicy),
 }
 
 #[derive(Clap)]
 struct Run {}
+
+#[derive(Clap)]
+struct Apply {}
 
 #[derive(Clap)]
 struct ImportAnanicy {}
@@ -184,7 +189,7 @@ fn match_process<'a>(
         debug!("{:?}", rule);
 
         if let Some(rule_name) = &rule.name {
-            if process_name == *rule_name {
+            if rule_name.contains(process_name.as_str()) {
                 debug!("matched by name");
                 matched_rule = Some(rule);
                 break;
@@ -231,7 +236,7 @@ fn apply_class(process: &Process, class: &config::RuniceClassConfig) {
     }
 }
 
-fn run() {
+fn run(once: bool) {
     info!("Initializing runice");
 
     let config = config::load_config();
@@ -254,6 +259,9 @@ fn run() {
                 apply_class(&process, &matched_class);
             }
         }
+        if once == true {
+            break;
+        }
         thread::sleep(time::Duration::from_millis(1000));
     }
 }
@@ -274,7 +282,10 @@ fn main() {
 
     match opts.subcmd {
         SubCommand::Run(_) => {
-            run();
+            run(false);
+        }
+        SubCommand::Apply(_) => {
+            run(true);
         }
         SubCommand::ImportAnanicy(_) => {
             import_ananicy();
