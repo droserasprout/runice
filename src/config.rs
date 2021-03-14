@@ -9,6 +9,7 @@ use serde_with::skip_serializing_none;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
+use std::ffi::OsStr;
 
 #[skip_serializing_none]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -97,10 +98,19 @@ pub fn load_config() -> config::Config {
         if !path.is_file() {
             continue;
         }
+        if path.extension().and_then(OsStr::to_str) != Some("yml") {
+            continue;
+        } 
         let path = path.to_str().unwrap();
 
         info!("Merging file {}", String::from(path));
-        config.merge(config::File::with_name(path)).unwrap();
+        match config.merge(config::File::with_name(path)) {
+            Ok(_) => (),
+            Err(err) => {
+                warn!("{} is not a valid runice config: {}", path, err);
+                continue;
+            },
+        }
     }
     let rules: RulesMapping = config.get("rules").unwrap();
     let total_rules: usize = rules.len();
