@@ -1,0 +1,25 @@
+classes:
+  bulk:
+    niceness: 19
+    sched_policy: idle
+    iosched_class: idle
+
+        config.merge(config::File::with_name(path))  realtime:
+    niceness: -10
+    iosched_class: realtime
+  viewer:
+    niceness: -3
+  oom-kill-last:
+    oom_score_adj: -1000
+  oom-kill-first:
+    oom_score_adj: 1000
+  game:
+    niceness: -5
+    iosched_class: best-effort
+  player:
+    niceness: -3
+    iosched_class: realtime
+  voip:
+    niceness: -1
+    iosched_class: best-effort
+    iosched_priority: 7

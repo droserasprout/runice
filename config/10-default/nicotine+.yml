@@ -1,0 +1,4 @@
+rules:
+  vscode:
+    class: bulk
+    name: nicotine

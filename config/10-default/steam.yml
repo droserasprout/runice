@@ -1,4 +1,12 @@
 rules:
   steamapps:
-    class: Game
-    cmdline: "steamapps"
+    class: game
+    cmdline: steamapps
+
+  steam:
+    class: bulk
+    name: steam
+
+  steamwebhelper:
+    class: bulk
+    name: steamwebhelper

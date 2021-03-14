@@ -1,4 +1,4 @@
 rules:
   vscode:
-    class: Doc-View
+    class: viewer
     cmdline: /usr/lib/code
